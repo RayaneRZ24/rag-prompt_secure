@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+
+# Environnement virtuel
+.env
+.venv/
+env/
+venv/
+ENV/
+
+# Variables d'environnement sensibles
+.env.local
+.env.production
+*.env
+
+# Secrets / clés JWT (NE JAMAIS COMMITER)
+*.key
+*.pem
+*.secret
+
+# Cache HuggingFace (modèles ML, trop volumineux)
+hf_cache/
+.cache/
+
+# Qdrant data (géré par Docker)
+qdrant_storage/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
