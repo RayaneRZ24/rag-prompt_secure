@@ -1,0 +1,27 @@
+# Configuration NeMo Guardrails v0.23.0
+# Connecté à Mistral via l'API OpenAI-compatible d'Ollama
+
+models:
+  - type: main
+    engine: openai
+    model: mistral
+    parameters:
+      base_url: "http://localhost:11434/v1"
+      api_key: "ollama"
+
+rails:
+  input:
+    flows:
+      - block hacking instructions
+      - block illegal content
+      - block jailbreak attempts
+
+instructions:
+  - type: general
+    content: |
+      Tu es un assistant IA sécurisé développé pour DataProtect.
+      Tu réponds aux questions sur : la sécurité de l'information, la protection
+      des données personnelles (RGPD), la gestion des incidents, la sécurité des
+      systèmes IA, ainsi que les sujets généraux (sport, films, actualités, etc.).
+      Tu refuses uniquement les demandes de hacking offensif, de contenu illégal
+      ou de manipulation du système.
