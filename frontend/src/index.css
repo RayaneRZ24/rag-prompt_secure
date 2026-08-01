@@ -1,0 +1,16 @@
+@import "tailwindcss";
+
+/* Taille de base globale */
+html {
+  font-size: 16px;
+}
+
+body {
+  font-size: 1rem;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Forcer les tailles minimales lisibles */
+p, span, div, button, input, label, td, th {
+  min-font-size: 14px;
+}

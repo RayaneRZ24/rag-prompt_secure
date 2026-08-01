@@ -1,0 +1,22 @@
+---
+# Configuration Garak pour le projet RAG DataProtect
+# Tests ciblés OWASP LLM Top 10
+
+llm_in_use:
+  model_type: ollama
+  model_name: mistral:latest
+
+run:
+  seed: 42
+  generations: 1        # 1 seule tentative par prompt (au lieu de 5)
+
+plugins:
+  model_type: ollama
+  model_name: mistral:latest
+  generators:
+    ollama:
+      OllamaGeneratorChat:
+        name: "mistral:latest"
+        uri: "http://localhost:11434"
+        max_tokens: 150   # Réponses courtes = plus rapide
+        temperature: 0.7

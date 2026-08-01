@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -25,6 +26,15 @@ app = FastAPI(
 )
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# ── CORS (frontend React sur port 5173) ───────────────────────────────────────
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://localhost:5174"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 # ── Schémas Pydantic ──────────────────────────────────────────────────────────
@@ -110,7 +120,8 @@ async def query(
     result = rag_query(guard.sanitized_text)
 
     # ── Couche 5 : inspection de la sortie ───────────────────────────────────
-    out = inspect_output(result.answer)
+    # str() nécessaire car result.answer peut être un TextAccessor (LangChain)
+    out = inspect_output(str(result.answer))
     if not out.is_safe:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
