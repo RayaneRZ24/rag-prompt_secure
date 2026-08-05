@@ -1,16 +1,105 @@
 @import "tailwindcss";
 
-/* Taille de base globale */
-html {
-  font-size: 16px;
+/* ─── Tailwind v4 : redéfinition de l'échelle de texte ───────────────────────
+   Tailwind v4 utilise @theme pour surcharger les utilitaires text-*
+   On monte toute l'échelle d'environ 2px pour une meilleure lisibilité
+   sans avoir à modifier chaque composant individuellement.
+─────────────────────────────────────────────────────────────────────────────── */
+@theme {
+  --text-xs:   0.8125rem;   /* 13px  (défaut: 12px) */
+  --text-sm:   0.9375rem;   /* 15px  (défaut: 14px) */
+  --text-base: 1.0625rem;   /* 17px  (défaut: 16px) */
+  --text-lg:   1.1875rem;   /* 19px  (défaut: 18px) */
+  --text-xl:   1.375rem;    /* 22px  (défaut: 20px) */
+  --text-2xl:  1.625rem;    /* 26px  (défaut: 24px) */
+  --text-3xl:  2rem;        /* 32px  (défaut: 30px) */
+  --text-4xl:  2.375rem;    /* 38px  (défaut: 36px) */
+  --text-5xl:  3.125rem;    /* 50px  (défaut: 48px) */
+
+  /* ─── Palette "SOC / cyber avancé" ───────────────────────────────────────
+     Base quasi-noire avec une légère teinte bleutée (pas un gris neutre),
+     accent rouge conservé (cohérence avec l'existant) + cyan comme second
+     accent (données/liens techniques) + émeraude déjà utilisé pour "sûr". */
+  --color-void-950:  #050609;
+  --color-void-900:  #0a0c11;
+  --color-void-850:  #0e1117;
+  --color-void-800:  #12151d;
+  --color-void-700:  #1a1e29;
+  --color-void-600:  #262b3a;
+  --color-void-500:  #3a4155;
+
+  --color-cyan-glow: #22d3ee;
+  --color-red-glow:  #ef4444;
+  --color-emerald-glow: #34d399;
 }
 
-body {
-  font-size: 1rem;
-  -webkit-font-smoothing: antialiased;
+/* ─── Styles de base ────────────────────────────────────────────────────────── */
+@layer base {
+  html, body {
+    font-size: 16px;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--color-void-950);
+    color: #E4E4E7;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.6;
+  }
+
+  input, button, select, textarea {
+    font-family: inherit;
+  }
+
+  code, pre {
+    font-family: 'Fira Code', 'Courier New', monospace;
+  }
 }
 
-/* Forcer les tailles minimales lisibles */
-p, span, div, button, input, label, td, th {
-  min-font-size: 14px;
+/* ─── Fond "SOC" : grille technique très subtile + halos radiaux fixes ───────
+   Donne une profondeur de type centre d'opérations sans nuire à la lisibilité
+   (opacité très faible, fixed pour ne pas scroller avec le contenu). */
+.cyber-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 900px 600px at 15% -10%, rgba(239, 68, 68, 0.10), transparent 60%),
+    radial-gradient(ellipse 900px 700px at 100% 30%, rgba(34, 211, 238, 0.06), transparent 60%),
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: auto, auto, 42px 42px, 42px 42px;
 }
+
+/* ─── Panneaux glassmorphiques réutilisables ───────────────────────────────── */
+@layer components {
+  .glass-panel {
+    background: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+  }
+
+  .glow-border-red {
+    box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.35), 0 8px 32px -8px rgba(239, 68, 68, 0.25);
+  }
+
+  .glow-border-cyan {
+    box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.3), 0 8px 32px -8px rgba(34, 211, 238, 0.2);
+  }
+
+  .glow-text-red {
+    text-shadow: 0 0 24px rgba(239, 68, 68, 0.5);
+  }
+
+  .glow-dot {
+    box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.15), 0 0 12px rgba(52, 211, 153, 0.6);
+  }
+}
+
+/* ─── Scrollbar minimale, adaptée au thème sombre ─── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #262b3a; border-radius: 9999px; }
+::-webkit-scrollbar-thumb:hover { background: #3a4155; }

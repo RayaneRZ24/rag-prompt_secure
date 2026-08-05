@@ -10,9 +10,10 @@ import './index.css'
 
 function Layout({ children }) {
   return (
-    <div className="min-h-screen bg-zinc-50 text-black">
+    <div className="min-h-screen bg-void-950 text-zinc-100 relative">
+      <div className="cyber-backdrop" />
       <Sidebar />
-      <main className="pl-64 min-h-screen">
+      <main className="pl-64 min-h-screen relative z-10">
         {children}
       </main>
     </div>

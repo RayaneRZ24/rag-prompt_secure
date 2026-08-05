@@ -1,66 +1,29 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
   LineChart, Line, CartesianGrid, PieChart, Pie, Cell,
 } from 'recharts'
-import { healthCheck } from '../api'
+import { healthCheck, getDashboardStats } from '../api'
 import {
-  ShieldAlert, ShieldCheck, Activity, TrendingUp,
-  CheckCircle, XCircle, Clock, Zap,
+  ShieldAlert, ShieldCheck, Activity, RefreshCw,
+  CheckCircle2, XCircle, Clock, Zap, ArrowUpRight, Fingerprint
 } from 'lucide-react'
 
-// ── Données simulées (en prod : endpoint FastAPI /stats) ──────────────────────
+const LAYER_COLORS = ['#ef4444', '#f97316', '#22d3ee', '#a78bfa', '#34d399', '#f43f5e']
+const CATEGORY_COLORS = { LLM01: '#ef4444', LLM02: '#f97316', LLM04: '#a78bfa', LLM05: '#f43f5e', LLM07: '#eab308', LLM08: '#22d3ee', 'Contenu dangereux': '#fb7185' }
 
-const OWASP_DATA = [
-  { name: 'LLM01', label: 'Prompt Injection',   blocked: 47, total: 52 },
-  { name: 'LLM02', label: 'Sensitive Data',      blocked: 31, total: 34 },
-  { name: 'LLM04', label: 'Data Poisoning',      blocked: 12, total: 12 },
-  { name: 'LLM05', label: 'Output Handling',     blocked: 28, total: 30 },
-  { name: 'LLM07', label: 'System Prompt Leak',  blocked: 19, total: 22 },
-  { name: 'LLM09', label: 'Overreliance',        blocked: 8,  total: 11 },
-]
-
-const ACTIVITY_DATA = [
-  { day: 'Lun', requetes: 34, bloquees: 12 },
-  { day: 'Mar', requetes: 52, bloquees: 21 },
-  { day: 'Mer', requetes: 41, bloquees: 15 },
-  { day: 'Jeu', requetes: 67, bloquees: 29 },
-  { day: 'Ven', requetes: 58, bloquees: 18 },
-  { day: 'Sam', requetes: 23, bloquees: 7  },
-  { day: 'Auj', requetes: 38, bloquees: 14 },
-]
-
-const LAYER_STATS = [
-  { name: 'Couche 1 — JWT',           blocked: 8,  color: '#ef4444' },
-  { name: 'Couche 2 — Input Guard',   blocked: 63, color: '#dc2626' },
-  { name: 'Couche 4 — NeMo',          blocked: 31, color: '#b91c1c' },
-  { name: 'Couche 5 — Output Guard',  blocked: 14, color: '#991b1b' },
-]
-
-const RECENT = [
-  { time: '21:44', type: 'block', cat: 'LLM01', msg: 'Injection via balise XML bloquée' },
-  { time: '21:43', type: 'block', cat: 'LLM05', msg: 'Encodage Base64 détecté' },
-  { time: '21:42', type: 'allow', cat: '—',     msg: 'Requête légitime traitée' },
-  { time: '21:41', type: 'block', cat: 'LLM01', msg: 'Tentative DAN jailbreak bloquée' },
-  { time: '21:40', type: 'allow', cat: '—',     msg: 'Authentification JWT réussie' },
-  { time: '21:39', type: 'block', cat: 'LLM02', msg: 'PII (email) anonymisé en sortie' },
-]
-
-// ── Stat card ─────────────────────────────────────────────────────────────────
-
-function StatCard({ icon: Icon, label, value, sub, color, delay }) {
+function StatCard({ icon: Icon, label, value, sub, glow, delay }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-      transition={{ delay }}
-      className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
+    <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay }}
+      className="glass-panel rounded-2xl p-6 relative overflow-hidden group hover:border-white/[0.14] transition-all">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-zinc-500 text-base font-medium">{label}</p>
-          <p className="text-4xl font-bold text-black mt-1">{value}</p>
-          <p className="text-zinc-400 text-xs mt-1">{sub}</p>
+          <p className="text-zinc-400 text-xs font-semibold uppercase tracking-wider">{label}</p>
+          <p className="text-3xl font-extrabold text-white mt-2 tracking-tight">{value}</p>
+          <p className="text-zinc-500 text-xs mt-1.5 font-medium">{sub}</p>
         </div>
-        <div className={`p-3 rounded-xl ${color}`}>
+        <div className={`p-3.5 rounded-xl bg-gradient-to-br ${glow}`}>
           <Icon className="w-5 h-5 text-white" />
         </div>
       </div>
@@ -71,141 +34,195 @@ function StatCard({ icon: Icon, label, value, sub, color, delay }) {
 const CustomTooltip = ({ active, payload, label }) => {
   if (!active || !payload?.length) return null
   return (
-    <div className="bg-black text-white text-xs rounded-lg px-3 py-2 shadow-xl">
-      <p className="font-semibold mb-1">{label}</p>
+    <div className="bg-void-900 text-white text-xs rounded-xl px-3.5 py-2.5 shadow-2xl border border-white/10 font-mono">
+      <p className="font-bold text-zinc-200 mb-1">{label}</p>
       {payload.map(p => (
-        <p key={p.name} style={{ color: p.color }}>{p.name} : {p.value}</p>
+        <p key={p.name} style={{ color: p.color || p.fill }}>{p.name} : {p.value}</p>
       ))}
     </div>
   )
 }
 
-// ── Page ──────────────────────────────────────────────────────────────────────
+function EmptyChart({ label }) {
+  return (
+    <div className="h-full flex items-center justify-center text-zinc-600 text-sm font-medium">
+      {label}
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const [apiOk, setApiOk] = useState(null)
+  const [stats, setStats] = useState(null)
+  const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true)
     healthCheck().then(() => setApiOk(true)).catch(() => setApiOk(false))
+    getDashboardStats()
+      .then(res => setStats(res.data))
+      .catch(() => setStats(null))
+      .finally(() => setLoading(false))
   }, [])
 
-  const totalBlocked = OWASP_DATA.reduce((s, d) => s + d.blocked, 0)
-  const totalReqs    = ACTIVITY_DATA.reduce((s, d) => s + d.requetes, 0)
-  const rate         = Math.round(totalBlocked / ACTIVITY_DATA.reduce((s, d) => s + d.bloquees, 0) * 100)
+  useEffect(() => { load() }, [load])
+
+  const categoryData = stats ? Object.entries(stats.by_category).map(([name, blocked]) => ({ name, blocked })) : []
+  const layerData = stats ? Object.entries(stats.by_layer).map(([name, blocked], i) => ({ name, blocked, color: LAYER_COLORS[i % LAYER_COLORS.length] })) : []
+  const trendData = stats ? stats.activity_trend.map(t => ({ day: t.day.slice(5), requetes: t.total, bloquees: t.blocked })) : []
 
   return (
-    <div className="min-h-screen bg-zinc-50 p-8 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="min-h-screen p-8 space-y-6 max-w-7xl mx-auto">
+      {/* Top Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-white/[0.06] pb-6">
         <div>
-          <h1 className="text-3xl font-bold text-black">Dashboard</h1>
-          <p className="text-zinc-500 mt-0.5 text-base">
-            Système actif ·{' '}
-            <span className={`font-medium ${apiOk === null ? 'text-zinc-400' : apiOk ? 'text-green-600' : 'text-red-600'}`}>
-              {apiOk === null ? 'Vérification...' : apiOk ? 'API en ligne' : 'API hors ligne'}
-            </span>
-          </p>
-        </div>
-        <div className="flex items-center gap-2 bg-white border border-zinc-200 rounded-xl px-4 py-2 text-sm text-zinc-500 shadow-sm">
-          <Clock className="w-4 h-4" /> Aujourd'hui · {new Date().toLocaleDateString('fr-FR')}
-        </div>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <StatCard icon={Activity}    label="Requêtes totales"   value={totalReqs}     sub="7 derniers jours"       color="bg-black"        delay={0}    />
-        <StatCard icon={ShieldAlert} label="Attaques bloquées"  value={totalBlocked}  sub="Toutes catégories"      color="bg-red-600"      delay={0.05} />
-        <StatCard icon={ShieldCheck} label="Taux de protection" value={`${rate}%`}    sub="Couches actives : 5"    color="bg-red-800"      delay={0.1}  />
-        <StatCard icon={Zap}         label="Temps de réponse"   value="1.2s"          sub="Médiane sur 24h"        color="bg-zinc-700"     delay={0.15} />
-      </div>
-
-      {/* Graphiques ligne 1 */}
-      <div className="grid grid-cols-3 gap-4">
-        {/* Barres OWASP */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-          className="col-span-2 bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-5">
-            <div>
-              <h2 className="text-black font-semibold">Attaques bloquées par catégorie OWASP</h2>
-              <p className="text-zinc-400 text-xs mt-0.5">Nombre de requêtes bloquées par type de risque LLM</p>
-            </div>
-            <span className="text-xs bg-red-50 text-red-600 border border-red-200 px-2.5 py-1 rounded-full font-medium">
-              LLM Top 10
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold text-white tracking-tight glow-text-red">Tableau de Bord Télémétrique</h1>
+            <span className={`inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border ${
+              apiOk === null ? 'bg-white/5 text-zinc-400 border-white/10' :
+              apiOk ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/25' : 'bg-red-500/10 text-red-400 border-red-500/25'}`}>
+              <span className={`w-2 h-2 rounded-full ${apiOk ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+              {apiOk === null ? 'Vérification...' : apiOk ? 'API Gateway en ligne' : 'API hors ligne'}
             </span>
           </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={OWASP_DATA} barSize={32}>
-              <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#71717a' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#71717a' }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="blocked" name="Bloquées" fill="#dc2626" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="total"   name="Total"    fill="#f4f4f5" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
+          <p className="text-zinc-500 text-xs mt-1">Supervision de la sécurité du RAG Llama 3.1 8b · 6 Couches actives · données réelles</p>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 glass-panel rounded-xl px-4 py-2 text-xs font-medium text-zinc-300">
+            <Clock className="w-3.5 h-3.5 text-zinc-500" />
+            <span>{new Date().toLocaleDateString('fr-FR')}</span>
+          </div>
+          <button onClick={load} disabled={loading}
+            className="flex items-center gap-2 glass-panel hover:border-red-500/30 rounded-xl px-4 py-2 text-xs font-semibold text-zinc-300 hover:text-white transition-all disabled:opacity-50">
+            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} /> Actualiser
+          </button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <StatCard icon={Activity}     label="Requêtes Totales"    value={stats?.total_requests ?? '—'}                        sub="Sur /query, cumul"          glow="from-zinc-700 to-zinc-800"  delay={0}    />
+        <StatCard icon={ShieldAlert}  label="Attaques Bloquées"   value={stats?.blocked_requests ?? '—'}                      sub="Neutralisées par nos couches" glow="from-red-500 to-red-700"  delay={0.05} />
+        <StatCard icon={ShieldCheck}  label="Taux de Blocage"     value={stats ? `${stats.protection_rate}%` : '—'}          sub="Part des requêtes stoppées"  glow="from-zinc-800 to-zinc-950"  delay={0.1}  />
+        <StatCard icon={Zap}          label="Temps de Réponse"    value={stats ? `${(stats.avg_response_ms / 1000).toFixed(1)}s` : '—'} sub="Moyenne, requêtes autorisées" glow="from-red-600 to-red-800"  delay={0.15} />
+      </div>
+
+      {/* Main Charts Line 1 */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* OWASP Bar Chart */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+          className="lg:col-span-2 glass-panel rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-white font-bold text-base tracking-tight">Attaques Bloquées par Catégorie OWASP</h2>
+              <p className="text-zinc-500 text-xs mt-0.5">Classification réelle des blocages, couches 2/4/5</p>
+            </div>
+            <span className="text-xs bg-red-500/10 text-red-400 border border-red-500/25 px-3 py-1 rounded-full font-semibold">
+              OWASP Top 10
+            </span>
+          </div>
+          <div style={{ height: 220 }}>
+            {categoryData.length === 0 ? <EmptyChart label="Aucun blocage enregistré pour l'instant" /> : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={categoryData} barSize={28}>
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#71717A', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#71717A' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(255,255,255,0.03)' }} />
+                  <Bar dataKey="blocked" name="Bloquées" radius={[6, 6, 0, 0]}>
+                    {categoryData.map((e) => <Cell key={e.name} fill={CATEGORY_COLORS[e.name] || '#ef4444'} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </motion.div>
 
-        {/* Pie par couche */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
-          className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-          <h2 className="text-black font-semibold mb-1">Blocages par couche</h2>
-          <p className="text-zinc-400 text-xs mb-4">Distribution des blocages</p>
-          <ResponsiveContainer width="100%" height={140}>
-            <PieChart>
-              <Pie data={LAYER_STATS} dataKey="blocked" cx="50%" cy="50%" innerRadius={40} outerRadius={65} paddingAngle={3}>
-                {LAYER_STATS.map((e) => <Cell key={e.name} fill={e.color} />)}
-              </Pie>
-              <Tooltip content={({ active, payload }) => active && payload?.length
-                ? <div className="bg-black text-white text-xs rounded-lg px-3 py-2">{payload[0].name} : {payload[0].value}</div>
-                : null} />
-            </PieChart>
-          </ResponsiveContainer>
-          <div className="space-y-1.5 mt-2">
-            {LAYER_STATS.map(l => (
-              <div key={l.name} className="flex items-center gap-2 text-xs text-zinc-500">
-                <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: l.color }} />
-                <span className="truncate">{l.name}</span>
-                <span className="ml-auto font-semibold text-black">{l.blocked}</span>
+        {/* Pie Chart par Couche */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+          className="glass-panel rounded-2xl p-6 flex flex-col justify-between">
+          <div>
+            <h2 className="text-white font-bold text-base tracking-tight">Répartition par Couche</h2>
+            <p className="text-zinc-500 text-xs mt-0.5">Volume de blocage par niveau de sécurité</p>
+          </div>
+          <div className="py-2" style={{ height: 150 }}>
+            {layerData.length === 0 ? <EmptyChart label="Aucune donnée" /> : (
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={layerData} dataKey="blocked" cx="50%" cy="50%" innerRadius={42} outerRadius={68} paddingAngle={4}>
+                    {layerData.map((e) => <Cell key={e.name} fill={e.color} />)}
+                  </Pie>
+                  <Tooltip content={<CustomTooltip />} />
+                </PieChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+          <div className="space-y-2 pt-2 border-t border-white/[0.06]">
+            {layerData.map(l => (
+              <div key={l.name} className="flex items-center justify-between text-xs text-zinc-400 font-medium">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: l.color }} />
+                  <span className="truncate">{l.name}</span>
+                </div>
+                <span className="font-mono font-bold text-white shrink-0">{l.blocked}</span>
               </div>
             ))}
           </div>
         </motion.div>
       </div>
 
-      {/* Graphiques ligne 2 */}
-      <div className="grid grid-cols-3 gap-4">
-        {/* Activité semaine */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-          className="col-span-2 bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-          <h2 className="text-black font-semibold mb-1">Activité des 7 derniers jours</h2>
-          <p className="text-zinc-400 text-xs mb-5">Requêtes totales vs attaques bloquées</p>
-          <ResponsiveContainer width="100%" height={160}>
-            <LineChart data={ACTIVITY_DATA}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f4f4f5" />
-              <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#71717a' }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 11, fill: '#71717a' }} axisLine={false} tickLine={false} />
-              <Tooltip content={<CustomTooltip />} />
-              <Line type="monotone" dataKey="requetes"  name="Requêtes"  stroke="#18181b" strokeWidth={2} dot={{ fill: '#18181b', r: 3 }} />
-              <Line type="monotone" dataKey="bloquees"  name="Bloquées"  stroke="#dc2626" strokeWidth={2} dot={{ fill: '#dc2626', r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
+      {/* Secondary Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+        {/* Activity Trend */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+          className="lg:col-span-2 glass-panel rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-white font-bold text-base tracking-tight">Tendance d'Activité (7 derniers jours)</h2>
+              <p className="text-zinc-500 text-xs mt-0.5">Trafic réel vs blocages, par jour</p>
+            </div>
+          </div>
+          <div style={{ height: 180 }}>
+            {trendData.length === 0 ? <EmptyChart label="Pas encore d'historique" /> : (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#71717A', fontWeight: 600 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#71717A' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                  <Tooltip content={<CustomTooltip />} />
+                  <Line type="monotone" dataKey="requetes"  name="Requêtes"  stroke="#a1a1aa" strokeWidth={2.5} dot={{ fill: '#a1a1aa', r: 3 }} />
+                  <Line type="monotone" dataKey="bloquees"  name="Bloquées"  stroke="#ef4444" strokeWidth={2.5} dot={{ fill: '#ef4444', r: 3 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </div>
         </motion.div>
 
-        {/* Événements récents */}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
-          className="bg-white rounded-2xl border border-zinc-200 p-6 shadow-sm">
-          <h2 className="text-black font-semibold mb-4">Événements récents</h2>
-          <div className="space-y-3">
-            {RECENT.map((e, i) => (
-              <div key={i} className="flex items-start gap-2.5">
-                {e.type === 'block'
-                  ? <XCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
-                  : <CheckCircle className="w-4 h-4 text-green-500 mt-0.5 shrink-0" />}
+        {/* Live Security Log Feed */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}
+          className="glass-panel rounded-2xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-white font-bold text-base tracking-tight">Derniers Événements</h2>
+            <span className="text-xs text-emerald-400 font-mono flex items-center gap-1">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse glow-dot" /> Live
+            </span>
+          </div>
+          <div className="space-y-3 max-h-[280px] overflow-y-auto">
+            {!stats?.recent?.length ? <EmptyChart label="Aucun événement" /> : stats.recent.map((e) => (
+              <div key={e.id} className="flex items-start gap-3 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.05]">
+                {e.status_code >= 400
+                  ? <XCircle className="w-4 h-4 text-red-400 mt-0.5 shrink-0" />
+                  : <CheckCircle2 className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" />}
                 <div className="flex-1 min-w-0">
-                  <p className="text-black text-xs font-medium truncate">{e.msg}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-zinc-400 text-xs">{e.time}</span>
-                    {e.cat !== '—' && (
-                      <span className="text-xs bg-red-50 text-red-600 px-1.5 py-0.5 rounded font-mono">{e.cat}</span>
+                  <p className="text-zinc-200 text-xs font-semibold truncate">
+                    {e.detail || `${e.method} ${e.endpoint}`}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-zinc-500 font-mono text-[11px]">
+                      {new Date(e.timestamp * 1000).toLocaleTimeString('fr-FR')}
+                    </span>
+                    {e.category && (
+                      <span className="text-[10px] bg-red-500/15 text-red-300 font-bold px-1.5 py-0.5 rounded font-mono">{e.category}</span>
                     )}
                   </div>
                 </div>
@@ -214,7 +231,15 @@ export default function Dashboard() {
           </div>
         </motion.div>
       </div>
+
+      {/* PII footer note */}
+      {stats?.pii_anonymized_count > 0 && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }}
+          className="glass-panel rounded-2xl p-4 flex items-center gap-3 text-sm text-zinc-400">
+          <Fingerprint className="w-4 h-4 text-cyan-400 shrink-0" />
+          <span><span className="text-white font-semibold">{stats.pii_anonymized_count}</span> requête(s) contenaient des données personnelles, anonymisées par Presidio avant traitement (LLM02).</span>
+        </motion.div>
+      )}
     </div>
   )
 }
-
