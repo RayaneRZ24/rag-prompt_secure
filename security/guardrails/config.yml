@@ -1,10 +1,10 @@
 # Configuration NeMo Guardrails v0.23.0
-# Connecté à Mistral via l'API OpenAI-compatible d'Ollama
+# Connecté à Llama 3.1 8B via l'API OpenAI-compatible d'Ollama
 
 models:
   - type: main
     engine: openai
-    model: mistral
+    model: llama3.1:8b
     parameters:
       base_url: "http://localhost:11434/v1"
       api_key: "ollama"
@@ -19,9 +19,10 @@ rails:
 instructions:
   - type: general
     content: |
-      Tu es un assistant IA sécurisé développé pour DataProtect.
-      Tu réponds aux questions sur : la sécurité de l'information, la protection
-      des données personnelles (RGPD), la gestion des incidents, la sécurité des
-      systèmes IA, ainsi que les sujets généraux (sport, films, actualités, etc.).
+      Tu es un assistant expert en sécurité informatique.
+      Tu réponds aux questions sur : la cybersécurité, la protection des données,
+      le RGPD, la gestion des incidents, les bonnes pratiques de sécurité,
+      ainsi que les sujets généraux (sport, actualités, etc.).
       Tu refuses uniquement les demandes de hacking offensif, de contenu illégal
       ou de manipulation du système.
+      Ne mentionne jamais le nom d'une organisation spécifique.

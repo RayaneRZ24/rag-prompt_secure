@@ -1,4 +1,5 @@
 # ── Couche 1 : API Gateway ────────────────────────────────────────────────────
+python-dotenv==1.0.1
 fastapi==0.136.1
 uvicorn==0.46.0
 python-jose[cryptography]==3.5.0

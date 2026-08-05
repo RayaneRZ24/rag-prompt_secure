@@ -4,7 +4,7 @@
 
 llm_in_use:
   model_type: ollama
-  model_name: mistral:latest
+  model_name: llama3.1:8b
 
 run:
   seed: 42
@@ -12,11 +12,11 @@ run:
 
 plugins:
   model_type: ollama
-  model_name: mistral:latest
+  model_name: llama3.1:8b
   generators:
     ollama:
       OllamaGeneratorChat:
-        name: "mistral:latest"
+        name: "llama3.1:8b"
         uri: "http://localhost:11434"
         max_tokens: 150   # Réponses courtes = plus rapide
         temperature: 0.7
