@@ -1,6 +1,6 @@
 """
 tests/run_garak.py
-Lance Garak sur Ollama/Mistral NU (sans nos protections)
+Lance Garak sur Ollama/Llama 3.1 8B nu (sans nos protections)
 pour établir le niveau de vulnérabilité de base du LLM.
 
 Probes sélectionnées : petites et rapides (< 10 prompts chacune)
@@ -32,13 +32,13 @@ probes_str = ",".join(PROBES)
 cmd = [
     sys.executable, "-m", "garak",
     "--model_type", "ollama",
-    "--model_name", "mistral:latest",
+    "--model_name", "llama3.1:8b",
     "--probes", probes_str,
     "--generations", "1",             # 1 seule tentative par prompt
 ]
 
 print("=" * 60)
-print("  Garak — Test du LLM Mistral NU (sans protection)")
+print("  Garak — Test du LLM Llama 3.1 8B nu (sans protection)")
 print("  Objectif : mesurer la vulnérabilité de base")
 print("=" * 60)
 print(f"Commande : {' '.join(cmd[2:])}\n")
