@@ -53,6 +53,23 @@ _BLOCKED_RULES = [
      "Je maintiens mes directives de sécurité et ne peux pas ignorer mes restrictions."),
 ]
 
+# ── Patterns d'instructions injectées dans un document (LLM08 — poisoning) ────
+# Un document indexé dans Qdrant peut contenir une instruction cachée destinée
+# à détourner le comportement du LLM une fois injectée dans le contexte
+# (ex: un faux marqueur "SYSTEM" suivi d'une consigne). Distinct des patterns
+# ci-dessus qui visent la question de l'utilisateur, pas le contenu récupéré.
+_DOCUMENT_INJECTION_PATTERNS = [
+    r"system\s*override", r"\[?system\]?\s*:", r"###\s*instruction",
+    r"nouvelles? instructions?\s*:", r"ignore (le contexte|les instructions) pr[ée]c[ée]dent",
+    r"ignore previous instructions", r"disregard (the )?(previous|above)",
+    r"tu es maintenant", r"en tant qu'ia tu dois", r"tu dois d[ée]sormais",
+]
+
+_DOCUMENT_BLOCKED_RULES = _BLOCKED_RULES + [
+    (_DOCUMENT_INJECTION_PATTERNS,
+     "Document exclu du contexte : tentative d'instruction injectée détectée."),
+]
+
 # ── Initialisation NeMo (optionnelle) ─────────────────────────────────────────
 _rails = None
 _nemo_ready = False
@@ -84,6 +101,23 @@ def _pattern_check(text: str) -> NemoResult:
         for pattern in patterns:
             if re.search(pattern, text_lower):
                 logger.info("Pattern bloqué détecté : '%s'", pattern)
+                return NemoResult(is_allowed=False, refusal_message=message)
+    return NemoResult(is_allowed=True)
+
+
+def check_document(text: str) -> NemoResult:
+    """
+    Vérifie si un chunk de document récupéré depuis Qdrant est sûr à inclure
+    dans le contexte envoyé au LLM (OWASP LLM08 — poisoning / injection via
+    données récupérées). Contrairement à check_topic(), qui filtre la question
+    utilisateur, cette fonction filtre le contenu qui revient de la base
+    vectorielle avant qu'il ne soit concaténé dans le prompt.
+    """
+    text_lower = text.lower()
+    for patterns, message in _DOCUMENT_BLOCKED_RULES:
+        for pattern in patterns:
+            if re.search(pattern, text_lower):
+                logger.warning("Chunk exclu du contexte — pattern détecté : '%s'", pattern)
                 return NemoResult(is_allowed=False, refusal_message=message)
     return NemoResult(is_allowed=True)
 

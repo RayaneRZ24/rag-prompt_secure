@@ -17,6 +17,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams
 
 from config import OLLAMA_BASE_URL, QDRANT_COLLECTION, QDRANT_HOST, QDRANT_PORT
+from security.nemo_guard import check_document
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,31 @@ def index_documents(documents: List[Document]) -> int:
     )
     chunks = splitter.split_documents(documents)
     logger.info("%d chunks générés depuis %d documents.", len(chunks), len(documents))
+
+    # Étape 1bis — Filtre anti-poisoning (LLM04/LLM08) : un chunk avec une
+    # instruction injectée (ex: "SYSTEM OVERRIDE") est rejeté ici, à l'entrée
+    # dans Qdrant — complète le filtre déjà en place à la récupération
+    # (rag/pipeline.py) qui ne couvrait que la sortie, pas l'entrée.
+    safe_chunks = []
+    for chunk in chunks:
+        check = check_document(chunk.page_content)
+        if check.is_allowed:
+            safe_chunks.append(chunk)
+        else:
+            logger.warning(
+                "Chunk rejeté à l'indexation (source=%s) : %s",
+                chunk.metadata.get("source", "inconnu"), check.refusal_message,
+            )
+    if len(safe_chunks) < len(chunks):
+        logger.warning(
+            "%d chunk(s) rejeté(s) à l'indexation sur %d pour contenu suspect (LLM04/LLM08).",
+            len(chunks) - len(safe_chunks), len(chunks),
+        )
+    chunks = safe_chunks
+
+    if not chunks:
+        logger.warning("Aucun chunk sûr à indexer après filtrage.")
+        return 0
 
     # Étape 2 & 3 — Embedding + stockage dans Qdrant
     client = QdrantClient(host=QDRANT_HOST, port=QDRANT_PORT)
