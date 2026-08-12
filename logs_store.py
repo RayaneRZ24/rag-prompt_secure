@@ -125,6 +125,16 @@ def get_stats() -> dict:
             "SELECT * FROM request_logs ORDER BY id DESC LIMIT 8"
         ).fetchall()
 
+    # Le libellé stocké est granulaire (ex: "Couche 2 — PromptGuard",
+    # "Couche 2 — Llama Guard 3") pour garder le détail exact dans les logs
+    # bruts. Pour un widget de synthèse ("répartition par couche"), on
+    # regroupe par numéro de couche uniquement, sinon deux mécanismes de la
+    # même couche apparaissent comme deux couches différentes dans le graphe.
+    by_layer_grouped: dict[str, int] = {}
+    for r in by_layer:
+        layer_group = r["layer"].split("—")[0].strip()
+        by_layer_grouped[layer_group] = by_layer_grouped.get(layer_group, 0) + r["c"]
+
     return {
         "total_requests": total,
         "blocked_requests": blocked,
@@ -132,7 +142,7 @@ def get_stats() -> dict:
         "avg_response_ms": round(avg_duration) if avg_duration else 0,
         "pii_anonymized_count": pii_count,
         "by_category": {r["category"]: r["c"] for r in by_category},
-        "by_layer": {r["layer"]: r["c"] for r in by_layer},
+        "by_layer": by_layer_grouped,
         "activity_trend": [dict(r) for r in reversed(trend_rows)],
         "recent": [dict(r) for r in recent],
     }

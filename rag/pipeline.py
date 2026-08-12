@@ -29,7 +29,7 @@ _SECURITY_KEYWORDS = [
     "pare-feu", "firewall", "intrusion", "malware", "ransomware", "phishing",
     "vulnérabilité", "patch", "conformité", "audit", "dpo", "consentement",
     "données sensibles", "traitement", "responsable", "protection",
-    "password", "mot de passe", "identifiant", "accès", "autorisation",
+    "password", "mot de passe", "mots de passe", "identifiant", "accès", "autorisation",
     "owasp", "llm", "injection", "prompt",
 ]
 
@@ -85,6 +85,7 @@ _PROMPT_TEMPLATE_GENERAL = ChatPromptTemplate.from_messages([
 class RAGResult:
     answer: str
     sources: list[str]
+    is_security: bool
 
 
 # ── Construction du pipeline ──────────────────────────────────────────────────
@@ -235,4 +236,4 @@ def query(question: str) -> RAGResult:
 
     logger.info("Pipeline RAG — réponse générée (%d chars).", len(answer))
 
-    return RAGResult(answer=answer, sources=sources)
+    return RAGResult(answer=answer, sources=sources, is_security=is_security)

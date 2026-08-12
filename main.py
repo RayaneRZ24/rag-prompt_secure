@@ -185,11 +185,11 @@ async def query(
             detail=f"Requête bloquée par le système de sécurité : {content_check.reason}",
         )
 
-    # ── Couche 4 : NeMo Guardrails (vérification du sujet) ───────────────────
+    # ── Couche 3 : NeMo Guardrails (vérification du sujet, orchestration) ────
     # Même contrainte : generate() de NeMo n'est pas compatible boucle async active.
     nemo = await run_in_threadpool(check_topic, guard.sanitized_text)
     if not nemo.is_allowed:
-        request.state.layer = "Couche 4 — NeMo Guardrails"
+        request.state.layer = "Couche 3 — NeMo Guardrails"
         request.state.category = "LLM01"
         request.state.detail = nemo.refusal_message
         raise HTTPException(
@@ -206,7 +206,9 @@ async def query(
     # ── Couche 5 : inspection de la sortie ───────────────────────────────────
     # str() nécessaire car result.answer peut être un TextAccessor (LangChain)
     # Même contrainte asyncio.run() que la couche 2 — isolé dans un thread.
-    out = await run_in_threadpool(inspect_output, str(result.answer))
+    # anonymize_pii=False en mode général : pas de RGPD/documents internes en
+    # jeu, seul le mode sécurité expose un vrai risque LLM02 (voir output_guard.py).
+    out = await run_in_threadpool(inspect_output, str(result.answer), result.is_security)
     if not out.is_safe:
         request.state.layer = "Couche 5 — Filtre de sortie"
         request.state.category = "LLM07" if "prompt système" in out.reason.lower() else "LLM05"
