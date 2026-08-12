@@ -10,7 +10,6 @@ Prérequis : Docker (Qdrant), Ollama (llama3.1:8b), uvicorn main:app
 """
 
 import json
-import os
 import sys
 import time
 import requests

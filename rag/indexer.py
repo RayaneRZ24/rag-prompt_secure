@@ -106,12 +106,3 @@ def index_documents(documents: List[Document]) -> int:
 
     logger.info("%d chunks indexés dans la collection '%s'.", len(chunks), QDRANT_COLLECTION)
     return len(chunks)
-
-
-def index_texts(texts: List[str], source: str = "manuel") -> int:
-    """
-    Raccourci pour indexer une liste de textes bruts (sans métadonnées).
-    Utile pour les tests rapides.
-    """
-    docs = [Document(page_content=t, metadata={"source": source}) for t in texts]
-    return index_documents(docs)
