@@ -48,7 +48,7 @@ export default function Logs() {
               Audit Trail
             </span>
           </div>
-          <p className="text-zinc-500 text-xs mt-1">Historique réel des requêtes et interventions des 6 couches OWASP</p>
+          <p className="text-zinc-500 text-xs mt-1">Historique réel des requêtes et interventions des 5 couches OWASP</p>
         </div>
 
         <button onClick={load}

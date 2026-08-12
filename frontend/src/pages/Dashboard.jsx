@@ -7,7 +7,7 @@ import {
 import { healthCheck, getDashboardStats } from '../api'
 import {
   ShieldAlert, ShieldCheck, Activity, RefreshCw,
-  CheckCircle2, XCircle, Clock, Zap, ArrowUpRight, Fingerprint
+  CheckCircle2, XCircle, Clock, Zap, Fingerprint
 } from 'lucide-react'
 
 const LAYER_COLORS = ['#ef4444', '#f97316', '#22d3ee', '#a78bfa', '#34d399', '#f43f5e']
@@ -85,7 +85,7 @@ export default function Dashboard() {
               {apiOk === null ? 'Vérification...' : apiOk ? 'API Gateway en ligne' : 'API hors ligne'}
             </span>
           </div>
-          <p className="text-zinc-500 text-xs mt-1">Supervision de la sécurité du RAG Llama 3.1 8b · 6 Couches actives · données réelles</p>
+          <p className="text-zinc-500 text-xs mt-1">Supervision de la sécurité du RAG Llama 3.1 8b · 5 Couches actives · données réelles</p>
         </div>
 
         <div className="flex items-center gap-3">

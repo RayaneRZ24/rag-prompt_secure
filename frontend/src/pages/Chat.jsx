@@ -191,7 +191,11 @@ export default function Chat() {
     } catch (err) {
       const status = err.response?.status
       const detail = err.response?.data?.detail || ''
-      const isSecurityBlock = status === 400 || status === 403
+      // Un blocage de sécurité peut arriver en 400 (couche 2, entrée) ou en
+      // 500 (couche 5, après génération — ex: fuite de prompt système LLM07).
+      // Se fier au message plutôt qu'au seul code HTTP distingue un vrai
+      // blocage volontaire d'une vraie panne serveur (Ollama down, etc.).
+      const isSecurityBlock = detail.includes('bloquée par le système de sécurité')
       updateActiveSession(m => [...m, {
         role: 'assistant',
         type: isSecurityBlock ? 'blocked' : 'server_error',
@@ -222,7 +226,7 @@ export default function Chat() {
         </div>
         <div className="flex items-center gap-2 text-sm font-medium text-zinc-300 glass-panel px-3.5 py-1.5 rounded-full">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse glow-dot" />
-          6 Couches OWASP Actives
+          5 Couches OWASP Actives
         </div>
       </div>
 

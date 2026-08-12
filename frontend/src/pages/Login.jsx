@@ -62,7 +62,7 @@ export default function Login() {
           </h1>
 
           <p className="text-zinc-400 text-base leading-relaxed max-w-md font-normal mb-10">
-            Architecture sécurisée combinant JWT, PromptGuard, Llama Guard 3, NeMo Guardrails et Presidio — 6 couches actives.
+            Architecture sécurisée combinant JWT, PromptGuard, Llama Guard 3, NeMo Guardrails et Presidio — 5 couches actives.
           </p>
 
           <div className="grid grid-cols-3 gap-3 max-w-lg">

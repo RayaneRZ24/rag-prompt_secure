@@ -62,7 +62,7 @@ export default function Sidebar() {
         {/* Protection Status Widget */}
         <div className="mx-1 p-3.5 rounded-2xl glass-panel">
           <div className="flex items-center gap-2 text-sm font-semibold text-zinc-200 mb-1">
-            <CheckCircle2 className="w-4 h-4 text-emerald-400" /> 6 Couches Actives
+            <CheckCircle2 className="w-4 h-4 text-emerald-400" /> 5 Couches Actives
           </div>
           <p className="text-sm text-zinc-400 leading-snug">
             OWASP LLM01, LLM02, LLM04, LLM05, LLM07, LLM08.
