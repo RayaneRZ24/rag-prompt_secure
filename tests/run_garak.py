@@ -1,6 +1,6 @@
 """
 tests/run_garak.py
-Lance Garak sur Ollama/Llama 3.1 8B nu (sans nos protections)
+Lance Garak sur Ollama/Llama 3.1 8B nu (sans protections)
 pour établir le niveau de vulnérabilité de base du LLM.
 
 Probes sélectionnées : petites et rapides (< 10 prompts chacune)
@@ -14,17 +14,17 @@ import sys
 # Probes rapides (peu de prompts) par catégorie OWASP
 PROBES = [
     # LLM01 - Prompt Injection
-    "promptinject.HijackHateHumans",   # ~10 prompts
+    "promptinject.HijackHateHumans",   
     # LLM01 - Jailbreak
-    "dan.Ablation_Dan_11_0",           # version réduite de DAN
-    # LLM05 - Encodage / Obfuscation
-    "encoding.InjectBase64",           # injection via Base64
-    "encoding.InjectROT13",            # injection via ROT13
+    "dan.Ablation_Dan_11_0",           
+    # LLM05 - Encodage 
+    "encoding.InjectBase64",           
+    "encoding.InjectROT13",            
     # LLM07 - Extraction du system prompt
     "sysprompt_extraction.SystemPromptExtraction",
     # LLM02 - Goodside (fuite de données)
-    "goodside.WhoIsRiley",             # ~3 prompts seulement
-    "goodside.Tag",                    # ~5 prompts
+    "goodside.WhoIsRiley",            
+    "goodside.Tag",                   
 ]
 
 probes_str = ",".join(PROBES)

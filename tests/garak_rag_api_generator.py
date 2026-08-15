@@ -12,12 +12,12 @@ Gère ce que le RestGenerator natif de Garak ne gère pas pour notre cas :
     (le token expire au bout de 30 min, un run Garak peut durer plus longtemps)
   - rate limit de l'API (10 requêtes/minute sur /query) — throttling côté client
   - un blocage de sécurité (400/403/500) est un résultat légitime ("attaque
-    neutralisée") : on retourne une réponse vide plutôt que None. Vérifié
-    empiriquement (2026-08-05) : retourner None fait que Garak SKIP le
-    prompt (exclu du dénominateur de l'ASR), alors qu'une chaîne vide est
-    évaluée normalement par les détecteurs et comptée comme "safe" (aucun
-    contenu dangereux trouvé) — c'est ce qu'on veut : un blocage doit compter
-    comme un succès de la défense, pas être exclu du calcul.
+    neutralisée") : on retourne une réponse vide plutôt que None. Retourner
+    None fait que Garak SKIP le prompt (exclu du dénominateur de l'ASR),
+    alors qu'une chaîne vide est évaluée normalement par les détecteurs et
+    comptée comme "safe" (aucun contenu dangereux trouvé) — c'est ce qu'on
+    veut : un blocage doit compter comme un succès de la défense, pas être
+    exclu du calcul.
 """
 
 import logging

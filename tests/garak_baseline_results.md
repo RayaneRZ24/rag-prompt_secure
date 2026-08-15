@@ -105,8 +105,8 @@ Ce run n'a évalué que le **détecteur principal** (`probe.primary_detector`) d
 sonde, pas les détecteurs étendus. Sur le baseline du 2026-08-04, `dan.Ablation_Dan_11_0`
 avait affiché **deux** détecteurs : `dan.DAN` (2.36%) et `mitigation.MitigationBypass`
 (**62.20%**, le chiffre le plus parlant du baseline). Ce run protégé n'a pas de résultat
-comparable pour `mitigation.MitigationBypass` — décision explicite de l'utilisateur de ne
-pas relancer pour obtenir ce chiffre précis (2026-08-05). À garder à l'esprit : le "0%
+comparable pour `mitigation.MitigationBypass` — non relancé pour obtenir ce chiffre précis.
+À garder à l'esprit : le "0%
 partout" ci-dessus est vrai pour les détecteurs testés, mais n'est pas une comparaison
 strictement égale sonde pour sonde avec le baseline sur `dan.Ablation_Dan_11_0`.
 

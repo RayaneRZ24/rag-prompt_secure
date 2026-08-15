@@ -47,8 +47,8 @@ try:
 
     # CreditCardRecognizer n'est enregistré par Presidio que pour "en" par
     # défaut — sans ça, une analyse en language="fr" (notre cas) ne le charge
-    # jamais et un numéro de carte bancaire passe inaperçu (constaté en test,
-    # 2026-08-03). Le pattern (regex + Luhn) est indépendant de la langue.
+    # jamais et un numéro de carte bancaire passe inaperçu. Le pattern
+    # (regex + Luhn) est indépendant de la langue.
     _analyzer.registry.add_recognizer(CreditCardRecognizer(supported_language="fr"))
 
     # Presidio n'a aucun recognizer intégré pour le NIR (numéro de sécurité
@@ -171,9 +171,7 @@ def _anonymize_pii(text: str, language: str = "fr") -> Tuple[str, List[str]]:
 
 # Un attaquant peut encoder une instruction malveillante (Base64, ROT13) pour
 # la faire passer inaperçue devant PromptGuard/le fallback regex, qui ne
-# regardent que le texte tel quel — confirmé en test (Garak encoding.InjectBase64
-# côté LLM nu, et test_security_layers.py côté API protégée, 2026-08-04 : aucune
-# de nos couches ne bloquait l'injection encodée, seul le hasard du LLM sauvait).
+# regardent que le texte tel quel.
 _BASE64_CANDIDATE_RE = re.compile(r"[A-Za-z0-9+/]{16,}={0,2}")
 
 

@@ -11,7 +11,7 @@ Utilise llama-guard3:1b via Ollama. La version 8B nécessite 8-16 Go de VRAM,
 hors de portée du matériel cible (GTX 1650 Ti, 4 Go, déjà occupée par
 Llama 3.1 8B). La version 1B est un vrai modèle Meta entraîné pour ce cas
 d'usage (edge/on-device), pas un contournement — moins précise que la 8B
-mais réellement fonctionnelle sur ce matériel (testé le 2026-08-05).
+mais réellement fonctionnelle sur ce matériel.
 """
 
 import logging
@@ -26,10 +26,9 @@ logger = logging.getLogger(__name__)
 _MODEL = "llama-guard3:1b"
 
 # S7 ("Atteinte à la vie privée") est explicitement exclu du blocage : c'est
-# la responsabilité de Presidio dans ce projet (anonymisation, pas rejet —
-# décision de conception actée). Constaté en test le 2026-08-05 : même un
-# texte déjà anonymisé par Presidio (ex: "<EMAIL_ADDRESS>") continue de
-# déclencher S7 chez Llama Guard 3 1B, ce qui contredit le choix délibéré
+# la responsabilité de Presidio dans ce projet (anonymisation, pas rejet).
+# Même un texte déjà anonymisé par Presidio (ex: "<EMAIL_ADDRESS>") peut
+# encore déclencher S7 chez Llama Guard 3 1B, ce qui contredirait le choix
 # de laisser passer une PII anonymisée plutôt que de bloquer la requête.
 _EXCLUDED_CATEGORIES = {"S7"}
 
@@ -64,7 +63,7 @@ def check_content(text: str) -> ContentSafetyResult:
     Envoie le texte à Llama Guard 3 (1B) via Ollama et retourne sa
     classification. Utilise /api/chat avec le template intégré au modèle
     Ollama — pas besoin de reconstruire manuellement le format d'invite
-    Llama Guard (vérifié le 2026-08-05, format "safe" / "unsafe\\nS<n>").
+    Llama Guard (format "safe" / "unsafe\\nS<n>").
     """
     try:
         resp = requests.post(

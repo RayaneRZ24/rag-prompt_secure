@@ -37,8 +37,8 @@ def _install_generator():
     """
     Copie le générateur personnalisé dans garak/generators/ — le système de
     plugins de Garak exige que toute classe chargée vive dans un module
-    garak.generators.* (vérifié empiriquement le 2026-08-05, pas une
-    convention optionnelle : _plugins.PluginCache.plugin_info() plante sinon).
+    garak.generators.* (pas une convention optionnelle :
+    _plugins.PluginCache.plugin_info() plante sinon).
     """
     import garak.generators
 
