@@ -21,19 +21,25 @@ Gère ce que le RestGenerator natif de Garak ne gère pas pour notre cas :
 """
 
 import logging
+import os
 import time
 from typing import List, Union
 
 import backoff
 import requests
+from dotenv import load_dotenv
 
 from garak import _config
 from garak.attempt import Conversation, Message
 from garak.exception import GeneratorBackoffTrigger, RateLimitHit
 from garak.generators.base import Generator
 
+load_dotenv()
+
 _API_BASE = "http://localhost:8000"
-_CREDENTIALS = {"username": "admin", "password": "dp2026"}
+# Identifiants lus depuis .env (DEMO_ADMIN_PASSWORD), jamais codés en dur —
+# voir .env.example.
+_CREDENTIALS = {"username": "admin", "password": os.environ["DEMO_ADMIN_PASSWORD"]}
 _MIN_INTERVAL_SECONDS = 6.5  # marge de sécurité sous la limite 10/min de l'API
 
 

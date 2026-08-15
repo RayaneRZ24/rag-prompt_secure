@@ -10,17 +10,23 @@ Prérequis : Docker (Qdrant), Ollama (llama3.1:8b), uvicorn main:app
 """
 
 import json
+import os
 import sys
 import time
 import requests
+from dotenv import load_dotenv
+
+load_dotenv()
 
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8")
 
 # ── Configuration ─────────────────────────────────────────────────────────────
+# Identifiants lus depuis .env (DEMO_ADMIN_PASSWORD), jamais codés en dur —
+# voir .env.example.
 
 API_BASE = "http://localhost:8000"
-CREDENTIALS = {"username": "admin", "password": "dp2026"}
+CREDENTIALS = {"username": "admin", "password": os.environ["DEMO_ADMIN_PASSWORD"]}
 
 # ── Couleurs terminal ──────────────────────────────────────────────────────────
 

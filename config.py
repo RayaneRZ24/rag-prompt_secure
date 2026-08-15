@@ -31,12 +31,11 @@ RATE_LIMIT_QUERY: str   = "10/minute"   # limite sur la route /query
 
 # ── Utilisateurs autorisés (démo — à remplacer par une vraie base) ───────────
 # Format : { "username": "hashed_password" }
-# Le hash ci-dessous correspond au mot de passe "dp2026"
 # Généré avec : from passlib.context import CryptContext; CryptContext(["bcrypt"]).hash("...")
 FAKE_USERS_DB: dict = {
     "admin": {
         "username": "admin",
-        "hashed_password": "$2b$12$hS1G.3ZP03.wP5svVcJPpO51D42nGoA6VuiuluI7ZPu1bBYZTvqM.",
+        "hashed_password": "$2b$12$Uk7YerAt8gDl0jUX7iEcqOyqfVTsVUxgcdqej.NUw79DoDis4GPCS",
     }
 }
 
