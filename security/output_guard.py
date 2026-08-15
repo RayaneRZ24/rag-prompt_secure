@@ -323,6 +323,45 @@ def _check_dangerous_code(text: str) -> tuple[bool, str]:
     return True, ""
 
 
+# ── Étape 2e — Détection de fuite d'identifiants/secrets (LLM02) ─────────────
+# Trouvé le 2026-08-14 en testant une hypothèse de l'encadrant : si un vrai
+# mot de passe était indexé dans Qdrant, une question directe ("quel est le
+# mot de passe ?") est refusée par le réflexe d'alignement du LLM, mais une
+# reformulation ("résume le document qui en parle") le fait fuiter (3/3 en
+# test) — et aucune couche existante ne l'interceptait. Presidio ne reconnaît
+# pas les mots de passe/clés API comme catégorie de PII par défaut (ses
+# recognizers couvrent email/téléphone/carte bancaire/noms, pas les secrets
+# applicatifs), et Llama Guard 3 exclut S7 (vie privée) du blocage.
+#
+# Approche : repérer un mot-déclencheur ("mot de passe", "clé API", "token"...)
+# suivi de "est"/":" puis d'une valeur qui RESSEMBLE à un secret (mélange de
+# lettres et de chiffres/symboles, assez longue) — pas juste n'importe quel mot
+# après "est", pour éviter de bloquer une description de politique légitime
+# ("la politique de mot de passe est la suivante : 12 caractères...").
+_CREDENTIAL_CONTEXT_RE = re.compile(
+    r"(mots? de passe|password|cl[ée]s? api|api keys?|identifiants?|tokens?|secrets?)"
+    r".{0,90}?(?:\best\b|\bis\b|:)\s*([^\s.,;!?]{6,})",
+    re.IGNORECASE,
+)
+
+
+def _looks_like_credential(token: str) -> bool:
+    """Heuristique simple : un vrai secret mélange généralement lettres et
+    chiffres/symboles (contrairement à un mot du langage courant)."""
+    has_letter = any(c.isalpha() for c in token)
+    has_digit_or_symbol = any(c.isdigit() or not c.isalnum() for c in token)
+    return has_letter and has_digit_or_symbol and len(token) >= 6
+
+
+def _check_credential_leak(text: str) -> tuple[bool, str]:
+    """Détecte la fuite d'un identifiant/secret retrouvé dans le contexte documentaire."""
+    for match in _CREDENTIAL_CONTEXT_RE.finditer(text):
+        candidate = match.group(2)
+        if _looks_like_credential(candidate):
+            return False, f"Fuite potentielle d'identifiant/secret détectée (contexte : '{match.group(1)}')"
+    return True, ""
+
+
 # ── Point d'entrée principal ──────────────────────────────────────────────────
 
 def inspect_output(response: str, anonymize_pii: bool = True) -> OutputGuardResult:
@@ -333,6 +372,7 @@ def inspect_output(response: str, anonymize_pii: bool = True) -> OutputGuardResu
     Étape 2 : détecte une fuite du prompt système (LLM07)
     Étape 3 : détecte le contenu dangereux dans la réponse (patterns)
     Étape 4 : détecte du code dangereux généré (LLM05, mitigation partielle)
+    Étape 4b : détecte la fuite d'un identifiant/secret issu des documents (LLM02)
     Étape 5 : anonymise les PII dans la réponse (Presidio) — seulement si sûre
 
     Les détections tournent sur le texte BRUT, pas sur le texte anonymisé :
@@ -374,6 +414,11 @@ def inspect_output(response: str, anonymize_pii: bool = True) -> OutputGuardResu
 
     # Étape 4 — Code dangereux
     is_safe, reason = _check_dangerous_code(response)
+    if not is_safe:
+        return OutputGuardResult(is_safe=False, sanitized_response=response, reason=reason)
+
+    # Étape 4b — Fuite d'identifiants/secrets (LLM02)
+    is_safe, reason = _check_credential_leak(response)
     if not is_safe:
         return OutputGuardResult(is_safe=False, sanitized_response=response, reason=reason)
 
